@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/hello.py": {
+      "runtime": "@vercel/python"
+    }
+  }
+}

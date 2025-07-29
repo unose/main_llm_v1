@@ -33,7 +33,7 @@ class handler(BaseHTTPRequestHandler):
             })
         else:
             # Default response
-            self.send_text_response("Hello, world!!! 🚀 Your serverless function is working!")
+            self.send_text_response("Hello, world!!! ** Your serverless function is working!")
     
     def send_json_response(self, data, status=200):
         """Helper method to send JSON responses"""

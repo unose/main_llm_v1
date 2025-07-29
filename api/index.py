@@ -35,34 +35,11 @@ class handler(BaseHTTPRequestHandler):
             # Default response
             self.send_text_response("Hello, world!!! 🚀 Your serverless function is working!")
     
-    def do_POST(self):
-        # Handle POST requests
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length)
-        
-        try:
-            data = json.loads(post_data.decode('utf-8'))
-            name = data.get('name', 'Anonymous')
-            
-            self.send_json_response({
-                "message": f"Hello, {name}! Thanks for the POST request!",
-                "received_data": data,
-                "timestamp": datetime.now().isoformat(),
-                "method": "POST"
-            })
-        except json.JSONDecodeError:
-            self.send_json_response({
-                "error": "Invalid JSON",
-                "message": "Please send valid JSON data"
-            }, status=400)
-    
     def send_json_response(self, data, status=200):
         """Helper method to send JSON responses"""
         self.send_response(status)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(json.dumps(data, indent=2).encode('utf-8'))
     
@@ -73,11 +50,4 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(text.encode('utf-8'))
-    
-    def do_OPTIONS(self):
-        """Handle CORS preflight requests"""
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+

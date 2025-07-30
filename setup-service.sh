@@ -24,7 +24,8 @@ ExecStart=/home/myoungkyu/main_llm_v1/venv/bin/gunicorn \
   api.index:app \
   --bind 0.0.0.0:8000 \
   --workers 2 \
-  --capture-output
+  --capture-output \
+  --reload
 Restart=always
 StandardOutput=journal
 StandardError=journal

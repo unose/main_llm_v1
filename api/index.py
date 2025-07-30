@@ -5,9 +5,15 @@ from datetime import datetime
 import torch
 # from unixcoder import UniXcoder
 from api.unixcoder import UniXcoder
+import logging 
 import traceback
 
 app = Flask(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(message)s"
+)
+app.logger.setLevel(logging.DEBUG)
 
 # Load UniXcoder model once
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,7 +29,7 @@ def codecomplete_api():
         beam_size  = int(payload.get('beam_size', 5))
         max_length = int(payload.get('max_length', 64))
         mask_token = str(payload.get('mask_token', "<mask0>"))
-        print(f"[DBG] mask token: {mask_token}")
+        app.logger.debug(f"[DBG] mask token: {mask_token}")
 
         # Tokenize and move to device
         token_ids = model.tokenize(
@@ -47,18 +53,8 @@ def codecomplete_api():
             out.replace(mask_token, "").strip()
             for out in raw_outputs[0]
         ]
-        print("[DBG] completions:")
-        print(completions)
+        app.logger.debug(f"[DBG] completions: {completions}")
         return jsonify({ "completions": completions })
-
-        # # preds shape: (1, beam_size, seq_len)
-        # # Extract the first batch and leave it as a list of 1D tensors
-        # beam_tensors = [pred for pred in pred_ids.squeeze(0)]
-
-        # # Decode expects a list of batches, where each batch is a list of 1D tensors
-        # completions = model.decode([beam_tensors])[0]
-
-        # return jsonify({ "completions": completions })
 
     except Exception as e:
         app.logger.error(traceback.format_exc())

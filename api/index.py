@@ -3,58 +3,59 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
 import torch
-from unixcoder import UniXcoder
+# from unixcoder import UniXcoder
+from api.unixcoder import UniXcoder
 import traceback
 
 app = Flask(__name__)
 
-# # Load UniXcoder model once
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model = UniXcoder("microsoft/unixcoder-base")
-# model.to(device)
-# model.eval()
+# Load UniXcoder model once
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = UniXcoder("microsoft/unixcoder-base")
+model.to(device)
+model.eval()
 
-# @app.route('/api/codecomplete', methods=['POST'])
-# def codecomplete_api():
-#     try:
-#         payload = request.get_json(force=True)
-#         method_def = payload['function']
-#         beam_size  = int(payload.get('beam_size', 5))
-#         max_length = int(payload.get('max_length', 64))
-#         # token placement is fixed in code; mask_token not needed here
+@app.route('/api/codecomplete', methods=['POST'])
+def codecomplete_api():
+    try:
+        payload = request.get_json(force=True)
+        method_def = payload['function']
+        beam_size  = int(payload.get('beam_size', 5))
+        max_length = int(payload.get('max_length', 64))
 
-#         # Tokenize + tensor
-#         tokens = model.tokenize(
-#             [method_def],
-#             mode="<encoder-only>",
-#             max_length=512,
-#             padding=True
-#         )
-#         source_ids = torch.LongTensor(tokens).to(device)
+        # Tokenize and move to device
+        token_ids = model.tokenize(
+            [method_def],
+            max_length=1023,
+            mode="<encoder-decoder>"
+        )
+        source_ids = torch.LongTensor(token_ids).to(device)
 
-#         # Generate completions
-#         with torch.no_grad():
-#             preds = model.generate(
-#                 source_ids,
-#                 decoder_only=True,
-#                 eos_id=model.config.eos_token_id,
-#                 beam_size=beam_size,
-#                 max_length=max_length
-#             )
+        # Generate with beam search
+        with torch.no_grad():
+            preds = model.generate(
+                source_ids,
+                decoder_only=False,
+                beam_size=beam_size,
+                max_length=max_length
+            )
+        
+        # preds shape: (1, beam_size, seq_len)
+        # Extract the first batch and leave it as a list of 1D tensors
+        beam_tensors = [pred for pred in preds.squeeze(0)]
 
-#         # Decode into strings
-#         batch_beams = preds.squeeze(0).cpu().tolist()
-#         completions = model.decode(batch_beams)[0]
+        # Decode expects a list of batches, where each batch is a list of 1D tensors
+        completions = model.decode([beam_tensors])[0]
 
-#         return jsonify({ "completions": completions })
+        return jsonify({ "completions": completions })
 
-#     except Exception as e:
-#         # Log the full traceback to console / Vercel logs
-#         app.logger.error(traceback.format_exc())
-#         return jsonify({
-#             "error": "server_error",
-#             "message": str(e)
-#         }), 500
+    except Exception as e:
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            "error": "server_error",
+            "message": str(e)
+        }), 500
+
 
 
 @app.route('/')

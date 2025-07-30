@@ -4,6 +4,55 @@ import json
 
 app = Flask(__name__)
 
+@app.route('/api/codecomplete', methods=['POST'])
+def codecomplete_api():
+    """
+    Accepts JSON:
+      {
+        "function": "<method definition string>",
+        "beam_size": 5,
+        "max_length": 64,
+        "mask_token": "<mask0>"
+      }
+    Returns:
+      {
+        "completions": [ "<completed code 1>", "<completed code 2>", ... ]
+      }
+    """
+    data = request.get_json(force=True)
+    method_def = data.get("function", "")
+    beam_size  = data.get("beam_size", 5)
+    max_length = data.get("max_length", 64)
+    # mask_token could be used if tokenize or generate logic requires it
+    # mask_token = data.get("mask_token", "<mask0>")
+
+    # Tokenize and convert to tensor
+    token_ids = model.tokenize(
+        [method_def],
+        mode="<encoder-only>",
+        max_length=512,
+        padding=True
+    )
+    source_ids = torch.LongTensor(token_ids).to(device)
+
+    # Generate with beam search
+    with torch.no_grad():
+        preds = model.generate(
+            source_ids,
+            decoder_only=True,
+            eos_id=model.config.eos_token_id,
+            beam_size=beam_size,
+            max_length=max_length
+        )
+
+    # Decode into strings
+    # preds shape: (batch_size=1, beam_size, seq_len)
+    # convert to list of lists of token IDs
+    pred_ids = preds.squeeze(0).cpu().tolist()
+    completions = model.decode(pred_ids)[0]
+
+    return jsonify({"completions": completions})
+
 @app.route('/')
 def home():
     return {
@@ -14,7 +63,7 @@ def home():
         "endpoints": [
             "/",
             "/about", 
-            "/api/hello",
+            "/api/codecomplete",
             "/api/time",
             "/api/greet/<name>",
             "/api/echo (POST)"

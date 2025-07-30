@@ -22,6 +22,8 @@ def codecomplete_api():
         method_def = payload['function']
         beam_size  = int(payload.get('beam_size', 5))
         max_length = int(payload.get('max_length', 64))
+        mask_token = str(payload.get('mask_token', "<mask0>"))
+        print(f"[DBG] mask token: {mask_token}")
 
         # Tokenize and move to device
         token_ids = model.tokenize(
@@ -42,9 +44,11 @@ def codecomplete_api():
 
         raw_outputs = model.decode(pred_ids)
         completions = [
-            out.replace(req.mask_token, "").strip()
+            out.replace(mask_token, "").strip()
             for out in raw_outputs[0]
         ]
+        print("[DBG] completions:")
+        print(completions)
         return jsonify({ "completions": completions })
 
         # # preds shape: (1, beam_size, seq_len)

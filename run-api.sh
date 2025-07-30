@@ -14,6 +14,7 @@ curl -X POST http://34.46.189.183/api/codecomplete \
 {
   "function": "public static void writeJson(Object data, String filePath) throws IOException {\n    Gson gson = new GsonBuilder()\n                   .setPrettyPrinting()\n                   .create();\n    try (Writer writer = new FileWriter(filePath)) {\n        gson.<mask0>(data, writer);\n    }\n}",
   "beam_size": 5,
-  "max_length": 64
+  "max_length": 64,
+  "mask_token": "<mask0>"
 }
 EOF

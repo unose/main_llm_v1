@@ -33,21 +33,28 @@ def codecomplete_api():
 
         # Generate with beam search
         with torch.no_grad():
-            preds = model.generate(
+            pred_ids = model.generate(
                 source_ids,
                 decoder_only=False,
                 beam_size=beam_size,
                 max_length=max_length
             )
-        
-        # preds shape: (1, beam_size, seq_len)
-        # Extract the first batch and leave it as a list of 1D tensors
-        beam_tensors = [pred for pred in preds.squeeze(0)]
 
-        # Decode expects a list of batches, where each batch is a list of 1D tensors
-        completions = model.decode([beam_tensors])[0]
-
+        raw_outputs = model.decode(pred_ids)
+        completions = [
+            out.replace(req.mask_token, "").strip()
+            for out in raw_outputs[0]
+        ]
         return jsonify({ "completions": completions })
+
+        # # preds shape: (1, beam_size, seq_len)
+        # # Extract the first batch and leave it as a list of 1D tensors
+        # beam_tensors = [pred for pred in pred_ids.squeeze(0)]
+
+        # # Decode expects a list of batches, where each batch is a list of 1D tensors
+        # completions = model.decode([beam_tensors])[0]
+
+        # return jsonify({ "completions": completions })
 
     except Exception as e:
         app.logger.error(traceback.format_exc())

@@ -16,6 +16,7 @@ This project includes `setup-main-llm.sh`, a bootstrap script that automates dep
 
 ## Usage
 
+- Note: make sure this repository is public.
 ```bash
 git clone https://github.com/unose/main_llm_v1.git
 mv main_llm_v1/setup-main-llm.sh ~

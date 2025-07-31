@@ -1,28 +1,64 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask3&demo-title=Flask%203%20%2B%20Vercel&demo-description=Use%20Flask%203%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask3-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+# main\_llm\_v1 Setup
 
-# Flask + Vercel
+This project includes `setup-main-llm.sh`, a bootstrap script that automates deploying the UniXcoder Flask API:
 
-This example shows how to use Flask 3 on Vercel with Serverless Functions using the [Python Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python).
+* Clones or updates the repository
+* Creates a Python 3 virtual environment and installs dependencies (`requirements.txt`)
+* Configures and starts the `llm_api` systemd service (runs Gunicorn)
+* Installs and configures Nginx as a reverse proxy on port 80
+* Opens HTTP (UFW) on port 80
 
-## Demo
+## Prerequisites
 
-https://flask-python-template.vercel.app/
+* Ubuntu 22.04 LTS (or similar)
+* `sudo` privileges
+* `git` installed
 
-## How it Works
-
-This example uses the Web Server Gateway Interface (WSGI) with Flask to enable handling requests on Vercel with Serverless Functions.
-
-## Running Locally
+## Usage
 
 ```bash
-npm i -g vercel
-vercel dev
+git clone https://github.com/unose/main_llm_v1.git
+mv main_llm_v1/setup-main-llm.sh ~
+chmod +x ~/setup-main-llm.sh
+sudo ~/setup-main-llm.sh [SERVER_IP|HOSTNAME]
 ```
 
-Your Flask application is now available at `http://localhost:3000`.
+* The optional `SERVER_IP|HOSTNAME` argument sets Nginx's `server_name`.
+* If omitted, the script attempts to detect the external IP via GCP metadata or `hostname -I`, then falls back to a wildcard (`_`).
 
-## One-Click Deploy
+## Post-setup
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
+* Stream service logs:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask3&demo-title=Flask%203%20%2B%20Vercel&demo-description=Use%20Flask%203%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask3-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+  ```bash
+  sudo journalctl -u llm_api -f
+  ```
+
+## Test the API
+
+After setup, verify the endpoint with a sample curl request:
+* Access the API at: `http://<SERVER>/api/codecomplete`
+
+```bash
+curl -X POST http://<SERVER>/api/codecomplete \
+  -H "Content-Type: application/json" \
+  --data-binary @- <<'EOF'
+{
+  "function": "public static void writeJson(Object data, String filePath) throws IOException {
+    Gson gson = new GsonBuilder()
+                   .setPrettyPrinting()
+                   .create();
+    try (Writer writer = new FileWriter(filePath)) {
+        gson.<mask0>(data, writer);
+    }
+}",
+  "beam_size": 5,
+  "max_length": 64,
+  "mask_token": "<mask0>"
+}
+EOF
+```
+
+## Re-running the Script
+
+Simply re-run with `sudo` to pull updates, reinstall dependencies, and restart services.

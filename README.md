@@ -16,7 +16,7 @@ This project includes `setup-main-llm.sh`, a bootstrap script that automates dep
 
 ## Usage
 
-- Note: make sure this repository is public.
+- Note: make sure 1) this repo is public; 2) gcloud authorization for new instance creation by clicking ssh button.
 ```bash
 git clone https://github.com/unose/main_llm_v1.git
 mv main_llm_v1/setup-main-llm.sh ~
